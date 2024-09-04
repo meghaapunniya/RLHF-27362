@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>City Guide Widget</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css?family=Roboto&display=swap"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/autocomplete-js@2.0.1/dist/autocomplete.min.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC297ApDOXg8WBFC9PkyFB1kg6YxDw6IoM&libraries=places"></script>
+    <style>
+      body {
+        font-family: 'Roboto', sans-serif;
+        background: url('indian_culture.jpg') no-repeat center center fixed;
+        background-size: cover;
+      }
+      .card {
+        background: #fff;
+        margin: 10px;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      .search-bar {
+        width: 100%;
+        padding: 10px;
+        font-size: 16px;
+      }
+      #map {
+        height: 300px;
+        width: 100%;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>City Guide Widget</h1>
+      <input
+        class="search-bar"
+        id="city-search"
+        placeholder="Search for a city..."
+      />
+      <div id="results"></div>
+      <div id="map"></div>
+      <div id="review-section"></div>
+    </div>
+
+    <script>
+      const cityData = [
+        {
+          city: 'Delhi',
+          attractions: [
+            {
+              name: 'Red Fort',
+              description:
+                "A UNESCO World Heritage site, the Red Fort is an iconic symbol of India's history.",
+              openingHours: '9:30 AM - 4:30 PM (Closed on Mondays)',
+              contactInfo: '+91 11 2327 7705',
+              pricing: {
+                domestic: '₹50',
+                international: '₹600',
+              },
+            },
+            {
+              name: 'Qutub Minar',
+              description:
+                'The tallest brick minaret in the world, Qutub Minar is an architectural marvel from the Mughal era.',
+              openingHours: '7:00 AM - 5:00 PM',
+              contactInfo: '+91 11 2469 8431',
+              pricing: {
+                domestic: '₹40',
+                international: '₹550',
+              },
+            },
+          ],
+          restaurants: [
+            {
+              name: "Karim's",
+              description:
+                "Famous for its Mughlai cuisine, Karim's is a must-visit for food lovers.",
+              openingHours: '9:00 AM - 12:00 AM',
+              contactInfo: '+91 11 2326 9880',
+              pricing: '₹800 for two',
+            },
+            {
+              name: 'Indian Accent',
+              description:
+                'A fine-dining restaurant that offers contemporary Indian cuisine with global influences.',
+              openingHours: '12:00 PM - 2:30 PM, 7:00 PM - 10:30 PM',
+              contactInfo: '+91 11 6617 5151',
+              pricing: '₹5000 for two',
+            },
+          ],
+          events: [
+            {
+              name: 'Delhi International Arts Festival',
+              description:
+                'An annual celebration of various art forms including music, dance, and theater.',
+              date: 'December 10-20, 2024',
+              contactInfo: 'info@delhiartsfestival.org',
+              pricing: 'Varies by event',
+            },
+          ],
+          localFavorites: [
+            {
+              name: 'Chandni Chowk',
+              description:
+                'One of the oldest and busiest markets in Old Delhi, known for its street food, jewelry, and textiles.',
+              openingHours: '10:00 AM - 8:00 PM',
+              contactInfo: '+91 11 2383 2947',
+              pricing: 'Varies by shop',
+            },
+          ],
+        },
+      ];
+      const searchInput = document.getElementById('city-search');
+      const resultsDiv = document.getElementById('results');
+      const mapDiv = document.getElementById('map');
+      const reviewSection = document.getElementById('review-section');
+
+      // Functions to display attractions, restaurants, events
+      function displayData(city) {
+        const dataHTML = '';
+        // Generate HTML for attractions, restaurants, events
+        mapDiv.innerHTML = '<div id="map"></div>';
+        initMap(city); // Initialize map with markers
+      }
+
+      // Geolocation function
+      function getLocation() {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(showPosition, showError);
+        }
+      }
+
+      function showPosition(position) {
+        // Use geocoder to get city name, then display data
+      }
+
+      function showError(error) {
+        resultsDiv.innerHTML = 'No suggestions currently';
+      }
+
+      // Autocomplete setup
+      autocomplete(
+        searchInput,
+        cityData.map((city) => city.city),
+        {
+          onSelect: (item) => displayData(item),
+        }
+      );
+
+      // Review submission handling
+      // Map initialization function
+    </script>
+  </body>
+</html>

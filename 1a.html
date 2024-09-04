@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>City Guide Widget</title>
+    <link
+      rel="stylesheet"
+      href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"
+    />
+    <style>
+      body {
+        font-family: 'Arial', sans-serif;
+        background: url('indian_culture.jpg') no-repeat center center fixed;
+        background-size: cover;
+      }
+      .widget {
+        background: rgba(255, 255, 255, 0.85);
+        padding: 20px;
+        border-radius: 10px;
+        margin: 20px;
+      }
+      .search-bar {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 20px;
+      }
+      .card {
+        background: #fff;
+        margin: 10px 0;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      #map {
+        height: 400px;
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="widget">
+      <h2>Explore India</h2>
+      <input
+        id="citySearch"
+        class="search-bar"
+        placeholder="Enter city or use your location..."
+      />
+      <div id="results"></div>
+      <div id="map"></div>
+      <div id="reviewSection" style="display: none">
+        <h3>Leave a Review</h3>
+        <input id="name" placeholder="Your Name" />
+        <textarea id="message" placeholder="Your Review"></textarea>
+        <input
+          type="number"
+          id="rating"
+          min="1"
+          max="5"
+          placeholder="Rating (1-5)"
+        />
+        <button onclick="submitReview()">Submit</button>
+      </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC297ApDOXg8WBFC9PkyFB1kg6YxDw6IoM"></script>
+    <script>
+      const citiesData = {
+        city: 'Delhi',
+        attractions: [
+          {
+            name: 'Red Fort',
+            description:
+              "A UNESCO World Heritage site, the Red Fort is an iconic symbol of India's history.",
+            openingHours: '9:30 AM - 4:30 PM (Closed on Mondays)',
+            contactInfo: '+91 11 2327 7705',
+            pricing: {
+              domestic: '₹50',
+              international: '₹600',
+            },
+          },
+          {
+            name: 'Qutub Minar',
+            description:
+              'The tallest brick minaret in the world, Qutub Minar is an architectural marvel from the Mughal era.',
+            openingHours: '7:00 AM - 5:00 PM',
+            contactInfo: '+91 11 2469 8431',
+            pricing: {
+              domestic: '₹40',
+              international: '₹550',
+            },
+          },
+        ],
+        restaurants: [
+          {
+            name: "Karim's",
+            description:
+              "Famous for its Mughlai cuisine, Karim's is a must-visit for food lovers.",
+            openingHours: '9:00 AM - 12:00 AM',
+            contactInfo: '+91 11 2326 9880',
+            pricing: '₹800 for two',
+          },
+          {
+            name: 'Indian Accent',
+            description:
+              'A fine-dining restaurant that offers contemporary Indian cuisine with global influences.',
+            openingHours: '12:00 PM - 2:30 PM, 7:00 PM - 10:30 PM',
+            contactInfo: '+91 11 6617 5151',
+            pricing: '₹5000 for two',
+          },
+        ],
+        events: [
+          {
+            name: 'Delhi International Arts Festival',
+            description:
+              'An annual celebration of various art forms including music, dance, and theater.',
+            date: 'December 10-20, 2024',
+            contactInfo: 'info@delhiartsfestival.org',
+            pricing: 'Varies by event',
+          },
+        ],
+        localFavorites: [
+          {
+            name: 'Chandni Chowk',
+            description:
+              'One of the oldest and busiest markets in Old Delhi, known for its street food, jewelry, and textiles.',
+            openingHours: '10:00 AM - 8:00 PM',
+            contactInfo: '+91 11 2383 2947',
+            pricing: 'Varies by shop',
+          },
+        ],
+      };
+
+      let currentCity = null;
+
+      $(function () {
+        $('#citySearch').autocomplete({
+          source: Object.keys(citiesData),
+          select: function (event, ui) {
+            displayCityInfo(ui.item.value);
+          },
+        });
+      });
+
+      function displayCityInfo(city) {
+        currentCity = city;
+        $('#results').html(''); // Clear previous results
+        if (citiesData[city]) {
+          ['Attractions', 'Restaurants', 'Events'].forEach((category) => {
+            let html = `<h3>${category}</h3>`;
+            citiesData[city][category].forEach((item) => {
+              html += `<div class="card"><h4>${item.name}</h4><p>${
+                item.description
+              }</p><p>Rating: ${item.rating || 'No ratings yet'}</p></div>`;
+            });
+            $('#results').append(html);
+          });
+          initMap(city);
+          $('#reviewSection').show();
+        } else {
+          $('#results').html('<p>No suggestions currently</p>');
+          $('#reviewSection').hide();
+        }
+      }
+
+      function initMap(city) {
+        const map = new google.maps.Map(document.getElementById('map'), {
+          center: { lat: 20.5937, lng: 78.9629 }, // Center of India, can be more specific to the city
+          zoom: 8,
+        });
+        // Here you would add markers for attractions, etc.
+      }
+
+      function submitReview() {
+        const name = $('#name').val();
+        const message = $('#message').val();
+        const rating = $('#rating').val();
+        // Logic to save review would go here, possibly AJAX to server
+        alert('Review submitted!'); // Placeholder for actual functionality
+      }
+
+      // Geolocation feature
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(function (position) {
+          // Logic to find nearest city or attractions based on position.coords
+        });
+      }
+    </script>
+  </body>
+</html>
