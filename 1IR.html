@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indian City Guide Widget</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-image: url('https://img.paisawapas.com/ovz3vew9pw/2022/09/06191305/Rectangle-1-2022-09-06T191239.216.png');
+            background-size: cover;
+            background-attachment: fixed;
+        }
+
+        .widget-container {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .city-card {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        #map {
+            height: 400px;
+            width: 100%;
+            border-radius: 10px;
+        }
+
+        #citySelect {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .star-rating {
+            color: #ffc107;
+        }
+
+        .ui-autocomplete {
+            position: absolute;
+            border: 1px solid #d4d4d4;
+            border-bottom: none;
+            border-radius: 0 0 4px 4px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            z-index: 99;
+            background-color: #fff;
+            max-height: 300px;
+            overflow-y: auto;
+            width: inherit;
+            list-style-type: lower-roman;
+        }
+
+        .ui-menu-item {
+            padding: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            color: #333;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .ui-menu-item:hover {
+            background-color: #e9e9e9;
+        }
+
+        .ui-menu-item.ui-state-active {
+            background-color: #d3d3d3;
+            color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container widget-container">
+        <h1 class="text-center mb-4">Indian City Guide</h1>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <input id="citySearch" class="form-control" placeholder="Start typing a city name">
+
+            </div>
+            <div class="col-md-6 mb-3">
+                <button id="geolocateBtn" class="btn btn-primary w-100">Use My Location</button>
+            </div>
+        </div>
+        <div id="cityInfo" class="mt-4"></div>
+        <div id="reviews-section" style="display: none;">
+            <h3>Reviews</h3>
+            <div id="reviews-container"></div>
+        </div>
+        <div id="map" class="mt-4"></div>
+        <div id="reviewForm" class="mt-4">
+            <h3>Leave a Review</h3>
+            <input type="text" id="reviewName" class="form-control mb-2" placeholder="Your Name">
+            <textarea id="reviewMessage" class="form-control mb-2" placeholder="Your Review"></textarea>
+            <select id="reviewRating" class="form-control mb-2">
+                <option value="">Select Rating</option>
+                <option value="1">1 Star</option>
+                <option value="2">2 Stars</option>
+                <option value="3">3 Stars</option>
+                <option value="4">4 Stars</option>
+                <option value="5">5 Stars</option>
+            </select>
+            <button id="submitReview" class="btn btn-success">Submit Review</button>
+        </div>
+    </div>
+
+    <script>
+        const cityData = [
+            {
+                name: "Mumbai",
+                attractions: [
+                    {
+                        name: "Gateway of India",
+                        description: "Iconic arch monument built in the early 20th century",
+                        openingHours: "24/7",
+                        price: "Free",
+                        contact: "+91 22 2284 1877"
+                    },
+                    {
+                        name: "Marine Drive",
+                        description: "Scenic waterfront promenade",
+                        openingHours: "24/7",
+                        price: "Free",
+                        contact: "N/A"
+                    }
+                ],
+                restaurants: [
+                    {
+                        name: "Trishna",
+                        description: "Famous for seafood",
+                        openingHours: "11:30 AM - 3:30 PM, 6:30 PM - 11:30 PM",
+                        priceRange: "₹2000 for two",
+                        contact: "+91 22 2270 3214"
+                    },
+                    {
+                        name: "Bombay Canteen",
+                        description: "Modern Indian cuisine",
+                        openingHours: "12:00 PM - 1:00 AM",
+                        priceRange: "₹2000 for two",
+                        contact: "+91 22 4966 6666"
+                    }
+                ],
+                events: [
+                    {
+                        name: "Kala Ghoda Arts Festival",
+                        description: "Annual arts festival",
+                        date: "February 1-9, 2025",
+                        venue: "Kala Ghoda, Fort"
+                    },
+                    {
+                        name: "Mumbai Film Festival",
+                        description: "International film festival",
+                        date: "October 15-22, 2024",
+                        venue: "Various locations"
+                    }
+                ],
+                coordinates: [19.0760, 72.8777]
+            },
+            {
+                name: "Delhi",
+                attractions: [
+                    {
+                        name: "Red Fort",
+                        description: "Historic fort complex",
+                        openingHours: "9:30 AM - 4:30 PM (Closed on Mondays)",
+                        price: "₹35 for Indians, ₹500 for foreigners",
+                        contact: "+91 11 2327 7705"
+                    },
+                    {
+                        name: "Qutub Minar",
+                        description: "UNESCO World Heritage Site",
+                        openingHours: "7:00 AM - 5:00 PM",
+                        price: "₹30 for Indians, ₹500 for foreigners",
+                        contact: "+91 11 2469 8431"
+                    }
+                ],
+                restaurants: [
+                    {
+                        name: "Indian Accent",
+                        description: "Award-winning fine dining",
+                        openingHours: "12:00 PM - 2:30 PM, 7:00 PM - 10:30 PM",
+                        priceRange: "₹1200 for two",
+                        contact: "+91 11 6617 5151"
+                    },
+                    {
+                        name: "Bukhara",
+                        description: "Iconic North Indian cuisine",
+                        openingHours: "12:30 PM - 2:45 PM, 7:00 PM - 11:45 PM",
+                        priceRange: "₹1000 for two",
+                        contact: "+91 11 2611 2233"
+                    }
+                ],
+                events: [
+                    {
+                        name: "India Art Fair",
+                        description: "Modern and contemporary art fair",
+                        date: "February 1-4, 2025",
+                        venue: "NSIC Exhibition Grounds"
+                    },
+                    {
+                        name: "Delhi Literature Festival",
+                        description: "Annual literary event",
+                        date: "February 8-10, 2025",
+                        venue: "Various locations"
+                    }
+                ],
+                coordinates: [28.6139, 77.2090]
+            },
+            {
+                name: "Bangalore",
+                attractions: [
+                    {
+                        name: "Lalbagh Botanical Garden",
+                        description: "Expansive botanical garden with glasshouse",
+                        openingHours: "6:00 AM - 7:00 PM",
+                        price: "₹20 for Indians, ₹200 for foreigners",
+                        contact: "+91 80 2657 8184"
+                    },
+                    {
+                        name: "Bangalore Palace",
+                        description: "Tudor-style palace with grand architecture",
+                        openingHours: "10:00 AM - 5:30 PM",
+                        price: "₹230 for Indians, ₹460 for foreigners",
+                        contact: "+91 80 2336 0818"
+                    }
+                ],
+                restaurants: [
+                    {
+                        name: "MTR (Mavalli Tiffin Room)",
+                        description: "Famous for traditional South Indian meals",
+                        openingHours: "6:30 AM - 11:00 AM, 12:30 PM - 8:30 PM",
+                        priceRange: "₹500 for two",
+                        contact: "+91 80 2222 0022"
+                    },
+                    {
+                        name: "Toit",
+                        description: "Popular microbrewery with craft beers",
+                        openingHours: "12:00 PM - 11:30 PM",
+                        priceRange: "₹2000 for two",
+                        contact: "+91 80 2520 2720"
+                    }
+                ],
+                events: [
+                    {
+                        name: "Bangalore Literature Festival",
+                        description: "Annual literary event with authors and poets",
+                        date: "November 7-9, 2024",
+                        venue: "Various locations"
+                    }
+                ],
+                coordinates: [12.9716, 77.5946]
+            },
+            {
+                name: "Chennai",
+                attractions: [
+                    {
+                        name: "Marina Beach",
+                        description: "Longest urban beach in India",
+                        openingHours: "24/7",
+                        price: "Free",
+                        contact: "N/A"
+                    },
+                    {
+                        name: "Kapaleeshwarar Temple",
+                        description: "Ancient Hindu temple with Dravidian architecture",
+                        openingHours: "5:00 AM - 12:00 PM, 4:00 PM - 9:00 PM",
+                        price: "Free",
+                        contact: "+91 44 2495 8252"
+                    }
+                ],
+                restaurants: [
+                    {
+                        name: "Murugan Idli Shop",
+                        description: "Popular for its idlis and dosas",
+                        openingHours: "7:00 AM - 10:00 PM",
+                        priceRange: "₹300 for two",
+                        contact: "+91 44 2461 1911"
+                    },
+                    {
+                        name: "The Marina",
+                        description: "Offers a variety of South Indian dishes",
+                        openingHours: "11:00 AM - 11:00 PM",
+                        priceRange: "₹800 for two",
+                        contact: "+91 44 2434 1160"
+                    }
+                ],
+                events: [
+                    {
+                        name: "Chennai Music Festival",
+                        description: "Annual festival showcasing classical music",
+                        date: "December 15-30, 2024",
+                        venue: "Various locations"
+                    },
+                    {
+                        name: "Madras Week",
+                        description: "Celebration of Chennai's heritage and history",
+                        date: "August 15-22, 2024",
+                        venue: "Various locations"
+                    }
+                ],
+                coordinates: [13.0827, 80.2707]
+            },
+            {
+                name: "Pondicherry",
+                attractions: [
+                    {
+                        name: "Sri Aurobindo Ashram",
+                        description: "Spiritual retreat founded by Sri Aurobindo",
+                        openingHours: "8:00 AM - 12:00 PM, 2:00 PM - 6:00 PM",
+                        price: "Free",
+                        contact: "+91 413 233 1814"
+                    },
+                    {
+                        name: "Auroville",
+                        description: "Experimental township dedicated to human unity",
+                        openingHours: "9:00 AM - 5:00 PM",
+                        price: "Free",
+                        contact: "+91 413 262 2650"
+                    }
+                ],
+                restaurants: [
+                    {
+                        name: "Le Café",
+                        description: "Seaside café known for its relaxed ambiance",
+                        openingHours: "8:00 AM - 10:00 PM",
+                        priceRange: "₹600 for two",
+                        contact: "+91 413 222 6688"
+                    },
+                    {
+                        name: "Villa Shanti",
+                        description: "French-inspired restaurant with a charming setting",
+                        openingHours: "12:00 PM - 3:00 PM, 7:00 PM - 10:00 PM",
+                        priceRange: "₹1200 for two",
+                        contact: "+91 413 233 1621"
+                    }
+                ],
+                events: [
+                    {
+                        name: "Pondicherry Heritage Festival",
+                        description: "Celebration of Pondicherry's rich heritage",
+                        date: "February 15-20, 2025",
+                        venue: "Various locations"
+                    },
+                    {
+                        name: "International Yoga Festival",
+                        description: "Annual event focusing on yoga and wellness",
+                        date: "January 15-20, 2025",
+                        venue: "Sri Aurobindo Ashram"
+                    }
+                ],
+                coordinates: [11.9416, 79.8083]
+            },
+            {
+                name: "Hyderabad",
+                attractions: [
+                    {
+                        name: "Charminar",
+                        description: "Historic monument and mosque",
+                        openingHours: "9:30 AM - 5:30 PM",
+                        price: "₹25 for Indians, ₹300 for foreigners",
+                        contact: "+91 40 2452 3456"
+                    },
+                    {
+                        name: "Golkonda Fort",
+                        description: "Ruined fortress with panoramic views",
+                        openingHours: "9:00 AM - 5:30 PM",
+                        price: "₹15 for Indians, ₹200 for foreigners",
+                        contact: "+91 40 2320 1310"
+                    }
+                ],
+                restaurants: [
+                    {
+                        name: "Bawarchi",
+                        description: "Famous for biryanis and kebabs",
+                        openingHours: "11:00 AM - 11:00 PM",
+                        priceRange: "₹800 for two",
+                        contact: "+91 40 2764 4272"
+                    },
+                    {
+                        name: "The Fisherman's Wharf",
+                        description: "Coastal cuisine with a vibrant atmosphere",
+                        openingHours: "12:00 PM - 3:30 PM, 7:00 PM - 11:00 PM",
+                        priceRange: "₹1500 for two",
+                        contact: "+91 40 2339 5352"
+                    }
+                ],
+                events: [
+                    {
+                        name: "Hyderabad Literary Festival",
+                        description: "Celebration of literature and authors",
+                        date: "January 10-12, 2025",
+                        venue: "Various locations"
+                    },
+                    {
+                        name: "Deccan Festival",
+                        description: "Cultural festival showcasing Hyderabad's heritage",
+                        date: "February 15-20, 2025",
+                        venue: "Different venues across the city"
+                    }
+                ],
+                coordinates: [17.3850, 78.4867]
+            }
+        ];
+
+        document.addEventListener('DOMContentLoaded', function () {
+
+            const citySearch = document.getElementById('citySearch');
+            const geolocateBtn = document.getElementById('geolocateBtn');
+            const cityInfo = document.getElementById('cityInfo');
+            const map = document.getElementById('map');
+            const reviewForm = document.getElementById('reviewForm');
+            const reviewName = document.getElementById('reviewName');
+            const reviewMessage = document.getElementById('reviewMessage');
+            const reviewRating = document.getElementById('reviewRating');
+            const submitReview = document.getElementById('submitReview');
+
+            let currentCity = null;
+
+            // Initialize autocomplete
+            $(citySearch).autocomplete({
+                source: cityData.map(city => city.name),
+                select: function (event, ui) {
+                    const cityName = ui.item.value;
+                    displayCityInfo(cityName);
+                }
+            });
+
+            $(document).ready(function () {
+                setTimeout(function () {
+                    $('#cityInput').autocomplete({
+                        source: cityData.map(city => city.name),
+                        select: function (event, ui) {
+                            const selectedCityName = ui.item.value;
+                            const selectedCity = cityData.find(city => city.name === selectedCityName);
+
+                            if (selectedCity) {
+                                const { coordinates, name } = selectedCity;
+                                const [lat, lng] = coordinates;
+
+                                googleMap.setCenter({ lat, lng });
+                                googleMap.setZoom(12);
+                                googleMap.setMapId('ebfe4d56a4b4206c');
+
+                                new google.maps.Marker({
+                                    position: { lat, lng },
+                                    map: googleMap,
+                                    title: name
+                                });
+                            }
+                        }
+                    });
+
+                    // Check if the autocomplete instance is initialized
+                    const autocompleteInstance = $('#cityInput').data('ui-autocomplete');
+                    if (autocompleteInstance) {
+                        console.log('Autocomplete instance initialized.');
+                        autocompleteInstance._renderItem = function (ul, item) {
+                            return $('<li>')
+                                .addClass('ui-menu-item')
+                                .append('<div>' + item.value + '</div>')
+                                .appendTo(ul);
+                        };
+                    }
+                }, 1000); // Adjust delay as needed
+            });
+
+            function saveReviewsToLocalStorage(cityName) {
+                if (currentCity && currentCity.reviews) {
+                    localStorage.setItem(cityName, JSON.stringify(currentCity.reviews));
+                }
+            }
+
+            function loadReviewsFromLocalStorage(cityName) {
+                const reviews = localStorage.getItem(cityName);
+                if (reviews) {
+                    if (!currentCity) {
+                        currentCity = {};
+                    }
+                    currentCity.reviews = JSON.parse(reviews);
+                } else {
+                    if (!currentCity) {
+                        currentCity = {};
+                    }
+                    currentCity.reviews = [];
+                }
+            }
+
+            function displayCityInfo(cityName) {
+                loadReviewsFromLocalStorage(cityName);
+
+                currentCity = cityData.find(city => city.name.toLowerCase() === cityName.toLowerCase());
+                if (currentCity) {
+                    let html = `<h2 style="text-align:center; color:green">${currentCity.name}</h2>`;
+
+                    html += '<h3>Attractions</h3>';
+                    currentCity.attractions.forEach(attraction => {
+                        html += `
+                <div class="city-card">
+                    <h4>${attraction.name}</h4>
+                    <p>${attraction.description}</p>
+                    <p><strong>Opening Hours:</strong> ${attraction.openingHours}</p>
+                    <p><strong>Price:</strong> ${attraction.price}</p>
+                    <p><strong>Contact:</strong> ${attraction.contact}</p>
+                </div>
+            `;
+                    });
+
+                    html += '<h3>Restaurants</h3>';
+                    currentCity.restaurants.forEach(restaurant => {
+                        html += `
+                <div class="city-card">
+                    <h4>${restaurant.name}</h4>
+                    <p>${restaurant.description}</p>
+                    <p><strong>Opening Hours:</strong> ${restaurant.openingHours}</p>
+                    <p><strong>Price Range:</strong> ${restaurant.priceRange}</p>
+                    <p><strong>Contact:</strong> ${restaurant.contact}</p>
+                </div>
+            `;
+                    });
+
+                    html += '<h3>Upcoming Events</h3>';
+                    currentCity.events.forEach(event => {
+                        html += `
+                <div class="city-card">
+                    <h4>${event.name}</h4>
+                    <p>${event.description}</p>
+                    <p><strong>Date:</strong> ${event.date}</p>
+                    <p><strong>Venue:</strong> ${event.venue}</p>
+                </div>
+            `;
+                    });
+
+                    updateReviews();
+
+                    cityInfo.innerHTML = html;
+                    updateMap(currentCity.coordinates[0], currentCity.coordinates[1]);
+                } else {
+                    cityInfo.innerHTML = '<p>City not found.</p>';
+                }
+            }
+
+            function updateMap(lat, lng) {
+                const mapOptions = {
+                    center: { lat: lat, lng: lng },
+                    mapId: 'ebfe4d56a4b4206c',
+                    zoom: 12
+                };
+                const newMap = new google.maps.Map(map, mapOptions);
+
+                const marker = new google.maps.marker.AdvancedMarkerElement({
+                    position: { lat: lat, lng: lng },
+                    map: newMap,
+                    title: currentCity.name
+                });
+            }
+
+            geolocateBtn.addEventListener('click', () => {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(position => {
+                        const userLat = position.coords.latitude;
+                        const userLng = position.coords.longitude;
+                        const nearestCity = findNearestCity(11.9416, 79.8083); // Replace with userLat & userLng 
+                        if (nearestCity) {
+                            $(citySearch).val(nearestCity.name).trigger('autocompleteselect');
+                            displayCityInfo(nearestCity.name);
+                        } else {
+                            cityInfo.innerHTML = '<p>No nearby cities found</p>';
+                            map.innerHTML = '';
+                        }
+                    }, () => {
+                        alert('Unable to retrieve your location');
+                    });
+                } else {
+                    alert('Geolocation is not supported by your browser');
+                }
+            });
+
+            function findNearestCity(lat, lng) {
+                let nearestCity = null;
+                let shortestDistance = Infinity;
+
+                cityData.forEach(city => {
+                    const distance = turf.distance(
+                        turf.point([lng, lat]),
+                        turf.point([city.coordinates[1], city.coordinates[0]])
+                    );
+                    if (distance < shortestDistance) {
+                        shortestDistance = distance;
+                        nearestCity = city;
+                    }
+                });
+
+                return shortestDistance <= 100 ? nearestCity : null;
+            }
+
+            submitReview.addEventListener('click', () => {
+                if (currentCity && reviewName.value && reviewMessage.value && reviewRating.value) {
+                    const review = {
+                        name: reviewName.value,
+                        message: reviewMessage.value,
+                        rating: parseInt(reviewRating.value)
+                    };
+
+                    if (!currentCity.reviews) {
+                        currentCity.reviews = [];
+                    }
+                    currentCity.reviews.push(review);
+
+                    // Save reviews to localStorage
+                    saveReviewsToLocalStorage(currentCity.name);
+
+                    updateReviews();
+                    reviewName.value = '';
+                    reviewMessage.value = '';
+                    reviewRating.value = '';
+                } else {
+                    alert('Please fill in all fields and select a city before submitting a review.');
+                }
+            });
+
+            function updateReviews() {
+                const reviewsContainer = document.getElementById('reviews-container');
+                const reviewsSection = document.getElementById('reviews-section');
+
+                // Clear the existing reviews
+                reviewsContainer.innerHTML = '';
+
+                // Check if there are reviews to display
+                if (currentCity && currentCity.reviews && currentCity.reviews.length > 0) {
+                    // Show the reviews section if it's not already visible
+                    if (reviewsSection.style.display === 'none') {
+                        reviewsSection.style.display = 'block';
+                    }
+
+                    // Append existing reviews
+                    currentCity.reviews.forEach(review => {
+                        const reviewHtml = `
+        <div class="city-card">
+          <h4>${review.name}</h4>
+          <p>${review.message}</p>
+          <div class="star-rating">
+            ${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)}
+          </div>
+        </div>
+      `;
+                        reviewsContainer.innerHTML += reviewHtml;
+                    });
+                } else {
+                    // Hide the reviews section if no reviews are available
+                    reviewsSection.style.display = 'none';
+                }
+            }
+
+        });
+
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?v=beta&key=YOUR_GOOGLE_MAPS_API_KEY&libraries=marker"></script>
+</body>
+</html>
